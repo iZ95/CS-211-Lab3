@@ -42,17 +42,66 @@ int main (int argc, char *argv[])
    /* Stop the timer */
 
    /* Add you code here  */
-   
+   low_value = 2 + id * (n - 1) / p;
+   high_value = 1 + (id + 1) * (n - 1) / p;
 
+   low_value = low_value + (low_value + 1) % 2;
+   high_value = high_value - (high_value + 1) % 2;
 
+   size = (high_value - low_value) / 2 + 1;
 
+   proc0_size = (n / 2 - 1) / p;
+   if ((2 + proc0_size) < (int)sqrt((double) n / 2))
+   {
+       if (!id)
+           printf("Too many processes.\n");
+       MPI_Finalize();
+       exit(1);
+   }
 
+   marked = (char*) malloc (size);
+   if (marked == NULL)
+   {
+       printf("Can not allocate enough memory.\n");
+       MPI_Finalize();
+       exit(1);
+   }
+   for (i = 0; i < size; i++)
+       marked[i] = 0;
 
+   if (!id)
+       index = 0;
+       prime = 3;
 
-
-
-
-
+   do
+   {
+       if (prime * prime > low_value)
+           first = (prime * prime - low_value) / 2;
+       else
+       {
+           if (!(low_value % prime))
+               first = 0;
+           else
+               first = (prime - (low_value % prime) + low_value / prime % 2 * prime) / 2;
+       }
+       for (i = first; i < size; i += prime)
+           marked[i] = 1;
+       if (!id)
+       {
+           while (marked[++index]);
+           prime = 3 + index * 2;
+       }
+       if (p > 1)
+           MPI_Bcast(&prime, 1, MPI_INT, 0, MPI_COMM_WORLD);
+   } while (prime * prime <= n);
+   count = 0;
+   for (i = 0; i < size; i++)
+       if (!marked[i])
+           count++;
+   if (!id)
+       count++;   
+   if (p > 1)
+       MPI_Reduce(&count, &global_count, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 
    elapsed_time += MPI_Wtime();
 
