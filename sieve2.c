@@ -58,19 +58,79 @@ int main (int argc, char *argv[])
 
    /* Add you code here  */
 
+   low_value = 2 + id * (n - 1) / p;
+   high_value = 1 + (id + 1) * (n - 1) / p;
+
+   low_value = low_value + (low_value + 1) % 2;
+   high_value = high_value - (high_value + 1) % 2;
+
+   size = (high_value - low_value) / 2 + 1;
+
+   local_prime_size = (int)sqrt((double)(n)) - 1;
+
+   proc0_size = (n / 2 - 1) / p;
+
+   if ((2 + proc0_size) < (int)sqrt((double)n / 2))
+   {
+       if (!id)
+           printf("Too many processes.\n");
+       MPI_Finalize();
+       exit(1);
+   }
+
+   marked = (char*) malloc (size);
+   local_prime_marked = (char*) malloc (local_prime_size);
+
+   if (marked == NULL || local_prime_marked == NULL)
+   {
+       printf("Can not allocate enough memory.\n");
+       MPI_Finalize();
+       exit(1);
+   }
+
+   local_prime = 2;
+   for (i = 0; i < local_prime_size; i++)
+       local_prime_marked[i] = 0;
+   index = 0;
+   do
+   {
+       local_first = local_prime * local_prime - 2;
+       for (i = local_first; i < local_prime_size; i += local_prime)
+           local_prime_marked[i] = 1;
+       while (local_prime_marked[++index]);
+       local_prime = 2 + index;
+   } while (local_prime * local_prime <= n);
 
 
+   for (i = 0; i < size; i++)
+       marked[i] = 0;
 
-
-
-
-
-
-
-
-
-
-
+   index = 0;
+   prime = 3;
+   do
+   {
+       if (prime * prime > low_value)
+           first = (prime * prime - low_value) / 2;
+       else
+       {
+           if (!(low_value % prime))
+               first = 0;
+           else
+               first = (prime - (low_value % prime) + low_value / prime % 2 * prime) / 2;
+       }
+       for (i = first; i < size; i += prime)
+           marked[i] = 1;
+       while (local_prime_marked[++index]);
+       prime = index + 2;
+   } while (prime * prime <= n);
+   count = 0;
+   for (i = 0; i < size; i++)
+       if (!marked[i])
+           count++;
+   if (!id)
+       count++;  
+   if (p > 1)
+       MPI_Reduce(&count, &global_count, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 
    /* Stop the timer */
 
