@@ -84,9 +84,9 @@ int main (int argc, char *argv[])
 
    marked = (char*) malloc (size);
 
-   local_marked = (char*) malloc (local_prime_size);
+   local_prime_marked = (char*) malloc (local_prime_size);
 
-   if (marked == NULL || local_marked == NULL)
+   if (marked == NULL || local_prime_marked == NULL)
    {
        printf("Can not allocate enough memory.\n");
        MPI_Finalize();
@@ -95,14 +95,14 @@ int main (int argc, char *argv[])
 
    local_prime = 2;
    for (i = 0; i < local_prime_size; i++)
-       local_marked[i] = 0;
+       local_prime_marked[i] = 0;
    index = 0;
    do
    {
        local_first = local_prime * local_prime - 2;
        for (i = local_first; i < local_prime_size; i += local_prime)
-           local_marked[i] = 1;
-       while (local_marked[++index]);
+           local_prime_marked[i] = 1;
+       while (local_prime_marked[++index]);
        local_prime = 2 + index;
    } while (local_prime * local_prime <= n);
 
@@ -131,7 +131,7 @@ int main (int argc, char *argv[])
            }
            for (i = first + (block_low_value - low_value) / 2; i <= (block_high_value - low_value) / 2; i += prime)
                marked[i] = 1;
-           while (local_marked[++index]);
+           while (local_prime_marked[++index]);
            prime = index + 2;
        }
        block_low_value = block_high_value + 2;
@@ -157,4 +157,5 @@ int main (int argc, char *argv[])
    MPI_Finalize ();
    return 0;
 }
+
 
